@@ -1,0 +1,48 @@
+# MedAssist API Workflow (Colab GPU)
+
+This document explains how data flows between your local machine and the Google Colab environment.
+
+## 1. High-Level Architecture
+
+```mermaid
+sequenceDiagram
+    participant U as Patient/Doctor
+    participant L as Local FastAPI
+    participant C as Colab (Ngrok)
+    participant W as Whisper (GPU)
+    participant O as Ollama (Qwen3)
+
+    U->>L: Upload Audio File
+    L->>C: POST /transcribe (Audio Data)
+    C->>W: Process Audio (GPU)
+    W-->>C: Transcript Text
+    C-->>L: JSON Result (text, segments)
+    
+    L->>C: POST /ollama/api/chat (Prompt)
+    C->>O: Proxy to Local Ollama
+    O-->>C: Structured Medical JSON
+    C-->>L: JSON Response
+    
+    L-->>U: Final Medical Extraction
+```
+
+## 2. Component Roles
+
+### Local FastAPI Server
+- **Entry Point**: Receives audio and manages the overall workflow.
+- **Client**: Acts as a client to the remote Colab APIs.
+- **Coordination**: Combines transcription and extraction results.
+
+### Colab Environment (The "Brain")
+- **Whisper Server**: Runs `faster-whisper` on a T4 GPU. This is ~10x faster than local CPU.
+- **Ngrok Tunnel**: Provides a secure public URL for your local app to talk to Colab.
+- **Ollama Proxy**: A custom route `/ollama/{path}` that forwards requests to the Ollama server running inside Colab.
+
+### Data Privacy
+- Files are sent over HTTPS (encrypted by ngrok/FastAPI).
+- Audio is processed in Colab memory and temporary files are deleted immediately after transcription.
+
+## 3. Why this is better
+1. **Speed**: Transcription that took minutes on CPU now takes seconds.
+2. **Quality**: Local machines often can't run the `large-v2` model or `Qwen3:8b` comfortably. Colab handles them easily.
+3. **Efficiency**: Your local RAM and CPU are free for other tasks.

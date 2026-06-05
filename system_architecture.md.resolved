@@ -1,0 +1,59 @@
+# MedAssist System Workflow
+
+The MedAssist system is designed to handle medical conversations through two primary paths: a **Unified Analysis** path for speed and a **Modular Extraction** path for precision.
+
+## Workflow Overview
+
+### 1. The Unified Path (Fast Intake)
+This is the most common flow, used when a doctor or assistant wants to process a recording immediately.
+*   **Endpoint**: `/api/analyze`
+*   **Flow**: `Audio File` ➔ `Whisper` (Transcription) ➔ `Qwen3 (no_think)` (Structured Extraction) ➔ `JSON Response`.
+*   **Best for**: Creating a summary of symptoms and medicines instantly after a patient visit.
+
+### 2. The Modular Path (Iterative Workflow)
+This allows for more control and deeper analysis at each stage.
+
+#### Stage A: Transcription
+*   **Endpoint**: `/api/transcribe`
+*   **Input**: Audio File.
+*   **Output**: Raw text + Segments.
+*   **Benefit**: Allows verifying or editing the transcript before extraction.
+
+#### Stage B: Structured Extraction
+*   **Endpoint**: `/api/extract`
+*   **Input**: Transcription text.
+*   **Output**: Symptoms, Diagnosis, Medicines, Advice.
+*   **Benefit**: Can be rerun on corrected transcripts without re-processing audio.
+
+#### Stage C: Deep Diagnosis
+*   **Endpoint**: `/api/diagnose`
+*   **Input**: List of symptoms (extracted in Stage B) + Patient Context.
+*   **Output**: Differential diagnoses, confidence levels, and recommended tests.
+*   **Benefit**: Uses the model's `think` mode for medical reasoning.
+
+## Visual Flow Diagram
+
+```mermaid
+graph TD
+    A[Audio Input] -->|/api/analyze| B(Unified Analysis)
+    A -->|/api/transcribe| C(Transcription)
+    
+    B -->|Structured Data| D[Frontend: Medical Record]
+    
+    C -->|Transcript| E{User Verification}
+    E -->|Corrected Text| F[ /api/extract ]
+    F -->|Symptoms| G[ /api/diagnose ]
+    
+    G -->|Differential Diagnosis| D
+    F -->|Medicines & Advice| D
+```
+
+## Internal Services Mapping
+
+| Router Endpoint | Service Layer | Model Used | Mode |
+| :--- | :--- | :--- | :--- |
+| `/api/transcribe` | [whisper_client.py](file:///d:/Fastapi/MedAssist/app/whisper_client.py) | Whisper-large-v3 | N/A |
+| `/api/analyze` | [transcription.py](file:///d:/Fastapi/MedAssist/app/services/transcription.py) + [extraction.py](file:///d:/Fastapi/MedAssist/app/services/extraction.py) | Whisper + Qwen3 | `-no-think` |
+| `/api/extract` | [extraction.py](file:///d:/Fastapi/MedAssist/app/services/extraction.py) | Qwen3 | `-no-think` |
+| `/api/diagnose` | [extraction.py](file:///d:/Fastapi/MedAssist/app/services/extraction.py) | Qwen3 | `-think` |
+| `/api/health` | [health.py](file:///d:/Fastapi/MedAssist/app/routers/health.py) | N/A | Ping Ollama |
