@@ -14,7 +14,6 @@ import tempfile
 import time
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from fastapi.sse import EventSourceResponse, ServerSentEvent
 
 from app.config import BUFFER_CONFIDENCE_THRESHOLD, OLLAMA_MODEL
 from app.services.medical_filter import filter_chunk
@@ -23,7 +22,6 @@ from app.services.symptom_buffer import SessionBuffer
 from app.services.extraction import structure_from_buffer
 from app.services.audio_preprocessing import cleanup_prepared_audio, prepare_audio_for_whisper
 from app.whisper_client import whisper_client
-from app.schemas import FinalReport, MedicineItem
 
 logger = logging.getLogger(__name__)
 

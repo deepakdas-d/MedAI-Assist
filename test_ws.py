@@ -1,6 +1,6 @@
 import asyncio, websockets, json, wave, io
 
-AUDIO_FILE       = r"C:\Users\deepa\Downloads\test1.wav"
+AUDIO_FILE       = r"C:\Users\deepa\Downloads\test.wav"
 WS_URL           = "ws://localhost:8000/api/ws/stream"
 
 SAMPLE_RATE      = 16000
