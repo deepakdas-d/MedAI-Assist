@@ -91,6 +91,7 @@ async def _call_ollama(prompt: str, json_mode: bool = True) -> str:
         "model": OLLAMA_MODEL,
         "messages": [{"role": "user", "content": prompt}],
         "stream": False,
+        "keep_alive": "30m",
         "options": {"temperature": 0.0},
     }
     if json_mode:

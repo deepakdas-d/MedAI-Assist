@@ -156,7 +156,7 @@ async def test():
         print(f"\n[+] All {chunk_num} chunks sent. Finalizing...\n")
         await ws.send(json.dumps({"action": "finalize"}))
 
-        report = await wait_for_event(ws, "final_report", timeout=120)
+        report = await wait_for_event(ws, "final_report", timeout=300)
         print("\n" + "=" * 60)
         if report:
             print("✅  FINAL MEDICAL REPORT")

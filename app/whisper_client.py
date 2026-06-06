@@ -9,6 +9,7 @@ from app.config import (
     FORCE_TRANSCRIPTION_LANGUAGE,
     WHISPER_API_URL,
     WHISPER_COMPUTE_TYPE,
+    WHISPER_INITIAL_PROMPT,
     WHISPER_MODEL,
     WHISPER_TIMEOUT,
 )
@@ -69,6 +70,8 @@ class WhisperClient:
                 effective_language = self._effective_language(language)
                 if effective_language:
                     data["language"] = effective_language
+                if WHISPER_INITIAL_PROMPT:
+                    data["initial_prompt"] = WHISPER_INITIAL_PROMPT
 
                 response = await client.post(
                     f"{self.api_url}/transcribe",
@@ -105,6 +108,7 @@ class WhisperClient:
             task=task,
             beam_size=5,
             vad_filter=True,
+            initial_prompt=WHISPER_INITIAL_PROMPT or None,
         )
         result_segments = []
         full_text = ""

@@ -129,12 +129,12 @@ async def _finalize_session(buffer: SessionBuffer) -> dict:
     try:
         result = await asyncio.wait_for(
             structure_from_buffer(prompt),
-            timeout=120,  # ✅ Reduced from 180s — if Qwen takes >2min something is wrong
+            timeout=300,
         )
         logger.info("✅ LLM returned result: %s", result)
         return result
     except asyncio.TimeoutError:
-        logger.error("❌ LLM call timed out after 120s — returning empty report")
+        logger.error("LLM call timed out after 300s - returning empty report")
         return empty
     except Exception as exc:
         logger.error("❌ LLM call failed: %s", exc)
@@ -207,6 +207,15 @@ async def websocket_stream(ws: WebSocket) -> None:
 
                     # ✅ Always clean up session from store first
                     _active_sessions.pop(buffer.session_id, None)
+
+                    await _safe_send(
+                        ws,
+                        _make_event(
+                            "finalizing",
+                            {"message": "Generating final medical report"},
+                            buffer.session_id,
+                        ),
+                    )
 
                     report_data = await _finalize_session(buffer)
                     logger.info("✅ Got report_data: %s", report_data)
