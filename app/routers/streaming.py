@@ -21,6 +21,7 @@ from app.services.red_flag_engine import check_red_flags
 from app.services.symptom_buffer import SessionBuffer
 from app.services.extraction import structure_from_buffer
 from app.services.audio_preprocessing import cleanup_prepared_audio, prepare_audio_for_whisper
+from app.services.report_safety import apply_transcript_safety
 from app.whisper_client import whisper_client
 
 logger = logging.getLogger(__name__)
@@ -76,6 +77,16 @@ async def _transcribe_chunk(audio_bytes: bytes, chunk_index: int) -> dict:
         tmp.write(audio_bytes)
         tmp.close()
         prepared = prepare_audio_for_whisper(tmp.name)
+        if prepared.quality.get("is_silent"):
+            return {
+                "success": True,
+                "transcript": "",
+                "text": "",
+                "segments": [],
+                "language": "",
+                "language_probability": 0.0,
+                "audio_quality": prepared.quality,
+            }
         result = await whisper_client.transcribe(prepared.path)
         result["audio_quality"] = prepared.quality
     finally:
@@ -131,6 +142,7 @@ async def _finalize_session(buffer: SessionBuffer) -> dict:
             structure_from_buffer(prompt),
             timeout=300,
         )
+        result = apply_transcript_safety(" ".join(buffer.transcript_chunks), result)
         logger.info("✅ LLM returned result: %s", result)
         return result
     except asyncio.TimeoutError:

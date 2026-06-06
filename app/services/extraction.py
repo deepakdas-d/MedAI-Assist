@@ -27,6 +27,12 @@ Task rules:
 - Ignore greetings, jokes, casual talk, and unrelated conversation.
 - Keep patient complaints separate from doctor advice/treatment.
 - If a value is unclear, put it in uncertain_items instead of guessing.
+- Leave a JSON field empty when the transcript does not clearly support it.
+- A symptom must be stated as a patient symptom, not just a translated word.
+- A prescribed medication requires a clear medicine name plus prescription context
+  or dosing instruction. If only a number/name fragment is heard, put it in
+  uncertain_items instead of prescribed_medications.
+- Preserve source evidence phrases for medications exactly as heard.
 - Normalize common terms: sugar = diabetes context, BP/pressure = blood pressure context.
 - Return strict JSON only.
 

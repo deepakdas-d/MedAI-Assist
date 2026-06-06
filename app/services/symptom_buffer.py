@@ -207,6 +207,16 @@ Extract a doctor-reviewable medical report from this Malayalam/Manglish
 doctor-patient transcript. Extract only explicit facts. Do not diagnose or
 guess. Put unclear items in uncertain_items.
 
+Rules:
+- Leave a JSON field empty when the transcript does not clearly support it.
+- A symptom must be stated as a patient symptom, not just a translated word.
+- A prescribed medication requires a clear medicine name plus prescription context
+  or dosing instruction. If only a number/name fragment is heard, put it in
+  uncertain_items instead of prescribed_medications.
+- Preserve source evidence phrases for medications exactly as heard.
+- If the transcript is mostly repeated, corrupted, or cross-script ASR noise,
+  keep medical fields empty and summarize the uncertainty in uncertain_items.
+
 FULL CONVERSATION TRANSCRIPT:
 {full_transcript}
 

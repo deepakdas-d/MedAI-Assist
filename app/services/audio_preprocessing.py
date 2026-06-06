@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import audioop
 import os
+import shutil
+import subprocess
 import tempfile
 import wave
 from dataclasses import dataclass, field
@@ -108,11 +110,68 @@ def _write_wav(frames: bytes) -> str:
     return tmp.name
 
 
+def _convert_with_ffmpeg(path: str) -> PreparedAudio | None:
+    """Convert any readable audio container to Whisper-friendly PCM WAV."""
+
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        return None
+
+    output_path = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+    output_path.close()
+    command = [
+        ffmpeg,
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-y",
+        "-i",
+        path,
+        "-ar",
+        str(TARGET_SAMPLE_RATE),
+        "-ac",
+        str(TARGET_CHANNELS),
+        "-c:a",
+        "pcm_s16le",
+        output_path.name,
+    ]
+    completed = subprocess.run(command, capture_output=True, text=True)
+    if completed.returncode != 0:
+        try:
+            os.unlink(output_path.name)
+        except FileNotFoundError:
+            pass
+        return None
+
+    wav = _read_wav(output_path.name)
+    quality = {
+        "input_format": os.path.splitext(path)[1].lstrip(".") or "unknown",
+        "normalized": True,
+        "conversion": "ffmpeg",
+    }
+    if wav is not None:
+        frames, metadata = wav
+        quality.update(metadata)
+        quality.update(_quality_metrics(frames, TARGET_SAMPLE_WIDTH))
+        quality.update(
+            {
+                "output_sample_rate": TARGET_SAMPLE_RATE,
+                "output_channels": TARGET_CHANNELS,
+                "output_sample_width": TARGET_SAMPLE_WIDTH,
+            }
+        )
+
+    return PreparedAudio(path=output_path.name, temp_paths=[output_path.name], quality=quality)
+
+
 def prepare_audio_for_whisper(path: str) -> PreparedAudio:
     """Normalize WAV audio and return the path Whisper should receive."""
 
     wav = _read_wav(path)
     if wav is None:
+        converted = _convert_with_ffmpeg(path)
+        if converted is not None:
+            return converted
         return PreparedAudio(
             path=path,
             quality={

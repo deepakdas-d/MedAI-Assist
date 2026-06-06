@@ -25,6 +25,7 @@ from app.schemas import (
 )
 from app.services.extraction import diagnose_from_symptoms, extract_medical_info
 from app.services.audio_preprocessing import cleanup_prepared_audio, prepare_audio_for_whisper
+from app.services.report_safety import apply_transcript_safety
 from app.whisper_client import whisper_client
 
 logger = logging.getLogger(__name__)
@@ -173,6 +174,7 @@ async def analyze_audio(
     logger.info("Transcriptions completed. Starting medical extraction via Qwen3...")
     try:
         raw_extraction = await extract_medical_info(transcript)
+        raw_extraction = apply_transcript_safety(transcript, raw_extraction)
         extraction = _parse_extraction(raw_extraction)
     except Exception as exc:
         logger.exception("Medical extraction failed (is Ollama running?)")
@@ -200,6 +202,7 @@ async def extract_from_text(body: ExtractRequest) -> ExtractResponse:
     """
     try:
         raw = await extract_medical_info(body.transcript)
+        raw = apply_transcript_safety(body.transcript, raw)
         extraction = _parse_extraction(raw)
     except Exception as exc:
         logger.exception("Medical extraction failed")

@@ -16,12 +16,17 @@ WHISPER_COMPUTE_TYPE: str = "int8"  # saves RAM on CPU
 DEFAULT_TRANSCRIPTION_LANGUAGE: str = "ml"
 FORCE_TRANSCRIPTION_LANGUAGE: bool = True
 WHISPER_INITIAL_PROMPT: str = (
-    "Malayalam doctor patient medical consultation. "
-    "Common Manglish words: pani fever, thalavedana headache, nenju vedana chest pain, "
-    "swasam muttal breathing difficulty, chumma cough, sugar diabetes, BP blood pressure, "
-    "ksheenam tiredness, thalakarakkam dizziness. "
-    "Malayalam terms: പനി, തലവേദന, നെഞ്ചുവേദന, ശ്വാസം മുട്ടൽ, ചുമ, ഷുഗർ, ബി പി, ക്ഷീണം, തലകറക്കം."
+    "Malayalam-English doctor patient medical consultation. "
+    "Transcribe Malayalam speech in Malayalam script and preserve English words, "
+    "medicine names, doses, numbers, BP, sugar, tablet, injection, morning, night, "
+    "after food, fever, cough, headache, chest pain, breathing difficulty, dizziness."
 )
+WHISPER_BEAM_SIZE: int = 5
+WHISPER_TEMPERATURE: float = 0.0
+WHISPER_CONDITION_ON_PREVIOUS_TEXT: bool = False
+WHISPER_NO_SPEECH_THRESHOLD: float = 0.65
+WHISPER_LOG_PROB_THRESHOLD: float = -1.0
+WHISPER_COMPRESSION_RATIO_THRESHOLD: float = 2.4
 
 # ── Ollama / Qwen3 Settings ────────────────────────────────────────────────────
 # Set OLLAMA_API_URL to the Colab ngrok base + "/ollama" to use the GPU proxy.

@@ -7,10 +7,18 @@ import logging
 from app.config import (
     DEFAULT_TRANSCRIPTION_LANGUAGE,
     FORCE_TRANSCRIPTION_LANGUAGE,
+    VAD_FILTER,
+    VAD_MIN_SILENCE_MS,
     WHISPER_API_URL,
+    WHISPER_BEAM_SIZE,
     WHISPER_COMPUTE_TYPE,
+    WHISPER_COMPRESSION_RATIO_THRESHOLD,
+    WHISPER_CONDITION_ON_PREVIOUS_TEXT,
     WHISPER_INITIAL_PROMPT,
+    WHISPER_LOG_PROB_THRESHOLD,
     WHISPER_MODEL,
+    WHISPER_NO_SPEECH_THRESHOLD,
+    WHISPER_TEMPERATURE,
     WHISPER_TIMEOUT,
 )
 
@@ -72,6 +80,22 @@ class WhisperClient:
                     data["language"] = effective_language
                 if WHISPER_INITIAL_PROMPT:
                     data["initial_prompt"] = WHISPER_INITIAL_PROMPT
+                data.update(
+                    {
+                        "beam_size": str(WHISPER_BEAM_SIZE),
+                        "temperature": str(WHISPER_TEMPERATURE),
+                        "condition_on_previous_text": str(
+                            WHISPER_CONDITION_ON_PREVIOUS_TEXT
+                        ).lower(),
+                        "vad_filter": str(VAD_FILTER).lower(),
+                        "vad_min_silence_ms": str(VAD_MIN_SILENCE_MS),
+                        "no_speech_threshold": str(WHISPER_NO_SPEECH_THRESHOLD),
+                        "log_prob_threshold": str(WHISPER_LOG_PROB_THRESHOLD),
+                        "compression_ratio_threshold": str(
+                            WHISPER_COMPRESSION_RATIO_THRESHOLD
+                        ),
+                    }
+                )
 
                 response = await client.post(
                     f"{self.api_url}/transcribe",
@@ -106,8 +130,14 @@ class WhisperClient:
             audio_path,
             language=effective_language,
             task=task,
-            beam_size=5,
-            vad_filter=True,
+            beam_size=WHISPER_BEAM_SIZE,
+            temperature=WHISPER_TEMPERATURE,
+            condition_on_previous_text=WHISPER_CONDITION_ON_PREVIOUS_TEXT,
+            vad_filter=VAD_FILTER,
+            vad_parameters={"min_silence_duration_ms": VAD_MIN_SILENCE_MS},
+            no_speech_threshold=WHISPER_NO_SPEECH_THRESHOLD,
+            log_prob_threshold=WHISPER_LOG_PROB_THRESHOLD,
+            compression_ratio_threshold=WHISPER_COMPRESSION_RATIO_THRESHOLD,
             initial_prompt=WHISPER_INITIAL_PROMPT or None,
         )
         result_segments = []
@@ -117,6 +147,9 @@ class WhisperClient:
                 "start": round(seg.start, 2),
                 "end":   round(seg.end, 2),
                 "text":  seg.text.strip(),
+                "avg_logprob": round(getattr(seg, "avg_logprob", 0.0), 3),
+                "no_speech_prob": round(getattr(seg, "no_speech_prob", 0.0), 3),
+                "compression_ratio": round(getattr(seg, "compression_ratio", 0.0), 3),
             })
             full_text += seg.text
 
